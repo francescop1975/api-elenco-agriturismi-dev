@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<AccessControl continueOnError="false" enabled="false" name="AC-IPGatekeeper">
+  <DisplayName>AC-IPGatekeeper</DisplayName>
+  <ClientIPVariable>request.header.x-forwarded-for.2</ClientIPVariable>
+  <Properties/>
+  <IPRules noRuleMatchAction="DENY">
+    <MatchRule action="ALLOW">
+      <SourceAddress mask="28">100.65.0.0</SourceAddress>
+      <SourceAddress mask="28">100.65.1.0</SourceAddress>
+    </MatchRule>
+  </IPRules>
+</AccessControl>

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<AssignMessage continueOnError="false" enabled="true" name="AM-setDynamicTargetSuffix">
+  <DisplayName>AM-setDynamicTargetSuffix</DisplayName>
+  <Properties/>
+  <AssignVariable>
+    <Name>pathSuffixWritable</Name>
+    <Template>{proxy.pathsuffix}</Template>
+  </AssignVariable>
+  <AssignVariable>
+    <Name>regex</Name>
+    <Template>^/[\d\.]+(?=/)</Template>
+  </AssignVariable>
+  <AssignVariable>
+    <Name>dynamicSuffix</Name>
+    <Template>{replaceFirst(pathSuffixWritable,regex,'')}</Template>
+  </AssignVariable>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+  <AssignTo createNew="false" transport="http" type="request"/>
+</AssignMessage>

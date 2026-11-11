@@ -1,0 +1,324 @@
+opencollection: 1.0.0
+
+info:
+  name: PDND-test-suite
+config:
+  proxy:
+    inherit: true
+    config:
+      protocol: http
+      hostname: ""
+      port: ""
+      auth:
+        username: ""
+        password: ""
+      bypassProxy: ""
+
+request:
+  variables:
+    - name: jsrsasign-js-url
+      value: https://cdnjs.cloudflare.com/ajax/libs/jsrsasign/10.5.27/jsrsasign-all-min.js
+    - name: aud_eservice
+      value: pdnd-test.regione.umbria.it/accreditamento-strutture
+    - name: INTEGRITY_REST_02_enabled
+      value: "true"
+    - name: voucher_type
+      value: DPoP
+  scripts:
+    - type: before-request
+      code: |-
+        const pdnd = require('./scripts/pdnd.js');
+        const security = require('./scripts/security_test.js');
+
+        async function main() {
+            try {
+                // 1. Leggiamo TUTTE le variabili di ambiente
+                const privateKey = bru.getGlobalEnvVar("client_private_key");
+                const kid = bru.getGlobalEnvVar("kid");
+                const clientId = bru.getGlobalEnvVar("client_id");
+                const purposeId = bru.getGlobalEnvVar("purpose_id");
+                const pdndAud = bru.getGlobalEnvVar("pdnd_aud"); 
+                const pdndAuthUrl = bru.getGlobalEnvVar("pdnd_auth_url"); 
+                const libUrl = bru.getCollectionVar("jsrsasign-js-url");
+                const audEservice = bru.getCollectionVar("aud_eservice");
+                const integrityEnabled = bru.getCollectionVar("INTEGRITY_REST_02_enabled");
+                
+                const dpopPublicKey = bru.getGlobalEnvVar("dpop_public_key");
+                const dpopPrivateKey = bru.getGlobalEnvVar("dpop_private_key");
+                const dpopAlg = bru.getGlobalEnvVar("dpop_alg");
+
+                const voucherType = (bru.getCollectionVar("voucher_type") || "Bearer").toUpperCase();
+                const libSource = await pdnd.getCryptoLibrary(bru, libUrl);
+              
+                const testIndex = parseInt(bru.getRequestVar("security_test_index"));
+
+                // --- 2. GESTIONE CACHE: Controllo validità token esistente ---
+                let token = bru.getVar("access_token");
+                let isCachedTokenValid = false;
+
+                if (token) {
+                    try {
+                        // Decodifica veloce del payload del JWT senza librerie esterne
+                        const payloadStr = Buffer.from(token.split('.')[1], 'base64').toString();
+                        const payloadJSON = JSON.parse(payloadStr);
+                        const currentTimestamp = Math.floor(Date.now() / 1000);
+                        
+                        // Controlla la scadenza con un margine di sicurezza di 10 secondi
+                        if (payloadJSON.exp && payloadJSON.exp > (currentTimestamp + 10)) {
+                            isCachedTokenValid = true;
+                        }
+                    } catch (e) {
+                        console.log("ℹ️ Impossibile parsare il token in cache. Verrà richiesto di nuovo.");
+                    }
+                }
+
+                // --- 3. FETCH: Richiediamo un nuovo token SOLO se necessario ---
+                if (!isCachedTokenValid) {
+                    console.log("🔄 Access Token assente o scaduto. Richiesta a PDND in corso...");
+                    const clientAssertion = await pdnd.generateClientAssertion(libSource, privateKey, kid, clientId, purposeId, pdndAud);
+                    
+                    if (voucherType === "DPOP") {
+                        if (!dpopPublicKey) throw new Error("Manca la 'dpop_public_key' nei Global Env per il DPoP.");
+                        const dpopAuthProof = pdnd.generateDPoPProof(libSource, dpopPrivateKey, dpopPublicKey, 'POST', pdndAuthUrl, dpopAlg);
+                        token = await pdnd.fetchAccessToken(clientAssertion, clientId, pdndAuthUrl, dpopAuthProof);
+                    } else {
+                        token = await pdnd.fetchAccessToken(clientAssertion, clientId, pdndAuthUrl);
+                    }
+                    
+                    // Salviamo il nuovo token in cache
+                    bru.setVar("access_token", token);
+                    console.log("✅ Nuovo Access Token ottenuto e salvato in cache!");
+                } else {
+                    console.log("⚡ Access Token valido recuperato dalla cache (Nessuna chiamata OAuth2 effettuata).");
+                }
+
+                // --- 4. UTILIZZO: Iniezione degli header (eseguito sempre) ---
+                if (voucherType === "DPOP") {
+                    // Per il DPoP dobbiamo sempre generare la Proof per la specifica API
+                    let targetUrl = req.getUrl();
+                    targetUrl = targetUrl.replace(/{{([^}]+)}}/g, (match, varName) => {
+                        const name = varName.trim();
+                        let val = bru.getVar(name);
+                        if (val === undefined || val === null) val = bru.getGlobalEnvVar(name);
+                        return val !== undefined && val !== null ? val : match;
+                    });
+                    const targetMethod = req.getMethod();
+                    const dpopApiProof = pdnd.generateDPoPProof(libSource, dpopPrivateKey, dpopPublicKey, targetMethod, targetUrl, dpopAlg, token);
+                    
+                    req.setHeader('Authorization', `DPoP ${token}`);
+                    req.setHeader('DPoP', dpopApiProof);
+                    console.log("🔐 Autenticazione DPoP applicata con successo!");
+                } else {
+                    req.setHeader('Authorization', `Bearer ${token}`);
+                    console.log("🔓 Autenticazione Bearer applicata con successo!");
+                }
+
+                // --- 5. INTEGRITY REST 02 ---
+                if (integrityEnabled === true || integrityEnabled === "true") {
+                    await pdnd.signPayloadIntegrity(req, libSource, privateKey, kid, clientId, audEservice);
+                }
+              
+              // --- 6. TEST DI SICUREZZA (Sabotaggio) ---
+                // Verrà eseguito solo se la request ha valorizzato 'security_test_mode'
+                let targetUrl = req.getUrl().replace(/{{([^}]+)}}/g, (match, varName) => {
+                    let val = bru.getVar(varName.trim()) || bru.getGlobalEnvVar(varName.trim());
+                    return val !== undefined ? val : match;
+                });
+
+                const waitTimeMs = await security.applySabotage(req, bru, pdnd, libSource, {
+                    realToken: token,
+                    method: req.getMethod(),
+                    targetUrl: targetUrl,
+                    voucherType: voucherType,
+                    dpopPrivateKey: dpopPrivateKey,
+                    dpopPublicKey: dpopPublicKey,
+                    dpopAlg: dpopAlg,
+                    privateKey: privateKey,
+                    kid: kid,
+                    clientId: clientId,
+                    pdndAud: pdndAud,
+                    pdndAuthUrl: pdndAuthUrl,
+                }, testIndex);
+              
+              // Se applySabotage ci ha restituito un numero maggiore di zero, facciamo il timeout!
+                if (waitTimeMs && waitTimeMs > 0) {
+                    console.log(`⏳ Messa in pausa dello script per ${waitTimeMs / 1000} secondi...`);
+                    // Eseguiamo il timeout nello scope globale di Bruno
+                    await new Promise(resolve => setTimeout(resolve, waitTimeMs));
+                    console.log("⏰ Attesa finita. Invio la chiamata HTTP!");
+                }
+
+                
+            } catch (e) {
+                console.error("❌ Errore nel flusso PDND:", e.response ? JSON.stringify(e.response.data) : e.message);
+            }
+        }
+
+        await main();
+    - type: tests
+      code: |-
+        const pdnd = require('./scripts/pdnd.js');
+        const security = require('./scripts/security_test.js');
+
+        const integrityEnabled = bru.getCollectionVar("INTEGRITY_REST_02_enabled");
+        const testIndex = parseInt(bru.getRequestVar("security_test_index"));
+
+        // 1. Facciamo le validazioni di sicurezza standard (il semaforo atteso)
+        security.validateResponse(res, test, expect, bru, testIndex);
+
+        if(testIndex === 0 || isNaN(testIndex) ){
+          // Eseguiamo i test di integrità solo se la feature è abilitata
+          if (integrityEnabled === true || integrityEnabled === "true") {
+
+              const providerPublicKey = bru.getGlobalEnvVar("erogatore_public_key");
+              const libSource = bru.getVar("jsrsasign-js");
+
+              pdnd.verifyResponseIntegrity(res, test, expect, providerPublicKey, libSource);
+
+          } else {
+              // Opzionale: un piccolo log nei test per ricordarti che è disabilitato
+              test("ℹ️ INTEGRITY_REST_02: Verifica disabilitata tramite variabile", function() {
+                  expect(true).to.be.true;
+              });
+          }
+        }
+
+docs:
+  content: |-
+    # 🚀 Autenticazione PagoPA Interop - Apigee Proxy
+
+    Questa collection gestisce i test per i proxy Apigee integrati con **PagoPA Interop (PDND)**. Il flusso di autenticazione (Private Key JWT, Bearer/DPoP) e la firma crittografica dei payload sono completamente automatizzati tramite script.
+
+    ## ⚙️ Automazione Sicurezza (Zero-Click)
+
+    Ogni richiesta in questa collection esegue un **Pre-request Script** centralizzato e un set di **Test automatici** sulla risposta. Il sistema gestisce in autonomia:
+
+    1. **OAuth2 Interop**: Genera un **JWT (Client Assertion)** firmato in RS256 per richiedere l'Access Token all'Auth Server di Interop.
+    2. **Gestione Dinamica Token (Bearer o DPoP)**: In base alla configurazione impostata, il sistema:
+       * **Bearer**: Inietta automaticamente il token nell'header `Authorization: Bearer {{access_token}}`.
+       * **DPoP**: Genera dinamicamente le firme crittografiche (DPoP Proof) calcolando l'hash dell'URL e del token, iniettando gli header `Authorization: DPoP {{access_token}}` e `DPoP: <jwt-proof>`.
+    3. **Firma del Payload (INTEGRITY_REST_02)**: Se abilitata tramite variabile e se la richiesta prevede un body (POST, PUT, PATCH), lo script calcola l'hash SHA-256 (header `Digest`) e firma gli header generando in automatico l'`Agid-JWT-Signature`.
+    4. **Verifica della Risposta**: Al termine della chiamata, se `INTEGRITY_REST_02` è attivo, il tab **Tests** ricalcola il Digest della risposta ricevuta e verifica la firma RSA dell'Erogatore per garantire che i dati non siano stati alterati.
+
+    ## 🔄 Scenari di Utilizzo: E-service vs Interoperabilità
+
+    Questa collection è "universale" e supporta nativamente i due principali scenari di PDND. La configurazione cambia leggermente in base al destinatario:
+
+    ### 1️⃣ Chiamata API verso un Erogatore (E-service)
+    Questo è il caso standard: il tuo Ente (Fruitore) chiama le API esposte da un altro Ente (Erogatore).
+    * **Client**: Si utilizza un client standard associato a una Finalità.
+    * **Variabile `purpose_id`**: **Obbligatoria**. Deve contenere l'ID della Finalità approvata.
+    * **Variabile `voucher_type`**: Di norma `Bearer` (ma supporta anche `DPoP` se richiesto dall'Erogatore).
+
+    ### 2️⃣ Chiamata API di Interoperabilità (Piattaforma PDND)
+    Questo scenario si usa per automatizzare operazioni sul portale PDND (es. leggere il catalogo, gestire chiavi).
+    * **Client**: Si deve utilizzare un **"Client API Interoperabilità"** creato appositamente sul portale.
+    * **Variabile `purpose_id`**: **DA LASCIARE VUOTA** (o eliminata/disabilitata). La piattaforma respingerà la richiesta se è presente un purpose.
+    * **Variabile `voucher_type`**: **Obbligatoriamente `DPoP`**.
+
+    ## 🏗️ Struttura Modulare (Libreria JS)
+
+    Per mantenere la collection pulita e manutenibile, tutta la complessa logica crittografica è stata isolata in una libreria JavaScript esterna situata in `scripts/pdnd.js`. 
+    Gli script nativi di Bruno (nel Pre-request e nei Test) si limitano a richiamare i metodi di questa libreria passando le variabili necessarie. **Non modificare il file `pdnd.js` a meno di cambiamenti agli standard AgID/PDND.**
+
+    ## 🌍 Configurazione Ambienti e Variabili
+
+    Per far funzionare i test, è necessario configurare due livelli di variabili: le **Global Environment** (per i segreti personali) e le **Collection Variables** (per le configurazioni dell'API).
+
+    ⚠️ **Importante:** Dopo aver aggiunto o modificato una variabile, clicca sempre su **SAVE** nell'interfaccia di Bruno.
+
+    ### 🔑 1. Global Environment (Segreti locali)
+    Queste variabili **non vengono committate** su Git. Richiedile a un collega e salvale nel tuo ambiente globale (icona dell'ingranaggio in alto a destra).
+
+    | Variabile | Descrizione | Esempio / Note |
+    | :--- | :--- | :--- |
+    | `client_id` | Identificativo univoco del client | Ottenuto dal portale Interop |
+    | `kid` | Key ID della chiave pubblica | Caricato su Interop |
+    | `client_private_key` | Chiave privata RSA (PEM) del client | Inizia con `-----BEGIN RSA PRIVATE KEY-----` |
+    | `dpop_private_key` | Chiave privata RSA (PEM) per DPoP  | **Necessaria per firmare la DPoP** |
+    | `dpop_public_key` | Chiave pubblica RSA (PEM) per DPoP  | **Necessaria per DPoP** (estrazione JWK) |
+    | `dpop_alg` | Algoritmo della chiave per DPoP  |  |
+    | `purpose_id` | ID della finalità (Purpose) | Obbligatorio per E-service, **vuoto per Interop** |
+    | `pdnd_auth_url` | Endpoint OAuth2 Interop | URL per recuperare l'access token |
+    | `pdnd_aud` | Audience per l'Auth | es. `auth.uat.interop.pagopa.it/client-assertion` |
+    | `erogatore_public_key` | Chiave Pubblica Erogatore (PEM) | Serve a verificare la firma della risposta (Integrity) |
+    | `apigee_host` | Host Apigee da colpire | es. `api-dev.regione.umbria.it` |
+
+    ### 📁 2. Collection Variables (Condivise su Git)
+    Queste variabili sono salvate a livello di Collection e definiscono il comportamento e il contesto dell'API.
+
+    | Variabile | Descrizione | Esempio / Note |
+    | :--- | :--- | :--- |
+    | `voucher_type` | Tipo di autenticazione | `Bearer` (default se vuoto) oppure `DPoP` |
+    | `INTEGRITY_REST_02_enabled` | Abilita la firma del payload | `true` per abilitare, `false` per ignorare |
+    | `aud_eservice` | Audience E-service | Destinatario nel payload INTEGRITY_REST_02 |
+    | `jsrsasign-js-url` | URL libreria crittografica | CDN per il download di jsrsasign |
+
+    ## 🧪 Esecuzione dei Test
+
+    1. Assicurati che le variabili del **Global Env** siano popolate e l'ambiente sia selezionato.
+    2. Controlla nella Collection che `voucher_type` e `INTEGRITY_REST_02_enabled` siano impostati correttamente per la tua specifica chiamata.
+    3. Seleziona la richiesta che desideri testare.
+    4. 📝 **Gestione del Body (POST/PUT/PATCH)**: Il calcolo crittografico del Digest si adatta in base a come configuri il tab **Body** in Bruno:
+       * **Se selezioni `JSON`**: Puoi scrivere il payload formattandolo comodamente con spazi e ritorni a capo per leggerlo meglio. Al momento del *Send*, lo script **"minificherà" in automatico il JSON** (rimuovendo spazi), calcolerà il Digest esatto sulla stringa compressa e forzerà Bruno a inviare quest'ultima.
+       * **Se selezioni `Text` (o Raw)**: Lo script **non altererà in alcun modo il payload**. Il testo verrà inviato in rete esattamente come lo hai digitato (inclusi spazi o a capo) e il Digest verrà calcolato fedelmente su quella stringa grezza.
+    5. Clicca su **Send**. L'autenticazione è gestita integralmente via script, non c'è bisogno di configurare manualmente il tab Auth.
+    6. 🎯 **Verifica l'esito**: Controlla il tab **Tests** della risposta per assicurarti che tutti i controlli (es. integrità e firma crittografica in ingresso) siano passati con successo.
+
+    ## 🛡️ Sicurezza e Git
+    Poiché le variabili sensibili sono salvate nei **Global Environments** di Bruno, queste risiedono nel profilo utente locale dell'applicazione e **non vengono committate** nel repository Git della collezione. Questo garantisce che la tua `client_private_key` e i segreti rimangano rigorosamente protetti sul tuo PC.
+
+    ## 🛡️ Suite di Penetration Testing (Negative Testing)
+
+    Oltre alle normali chiamate legittime, questa collection include una potente suite di test di sicurezza automatizzati. L'obiettivo è verificare che l'Erogatore (il server che riceve le chiamate) abbia implementato correttamente tutti i controlli crittografici previsti dalle linee guida AgID e dallo standard DPoP, respingendo eventuali attacchi.
+
+    ### ⚙️ Variabili Globali Aggiuntive
+    Per eseguire alcuni test di forgiatura dei token, è necessario aggiungere queste tre variabili al tuo **Global Environment**:
+
+    * `fake_dpop_private_key`: Una chiave privata RSA valida ma *non autorizzata* su PDND (usata per simulare il furto di token e il sabotaggio del Thumbprint).
+    * `fake_dpop_public_key`: La chiave pubblica corrispondente alla chiave privata falsa.
+    * `wrong_purpose_id`: Un `purpose_id` valido su PDND, ma appartenente a un e-service o a un accordo di interoperabilità *diverso* da quello dell'API che stai testando (usato per testare i controlli sull'Audience).
+
+    ### 🚀 Come lanciare un Test di Sicurezza
+
+    Non è necessario modificare gli script. Per lanciare un attacco mirato, segui questi passaggi:
+
+    1.  **Duplica** una delle richieste funzionanti presenti nella Collection (es. rinominala in *"Test Sicurezza - DPoP errato"*).
+    2.  All'interno della richiesta duplicata, vai nel tab **Vars**.
+    3.  Seleziona la sezione **Pre Request** (fondamentale: non *Post Response*).
+    4.  Crea una nuova variabile chiamata `security_test_mode` e valorizzala con l'**ID del test** che vuoi eseguire (es. `4`).
+    5.  Clicca su **Send**.
+
+    > **🎯 Verifica dell'esito:** In modalità sicurezza, il tab **Tests** di Bruno cambierà logica. Otterrai un Semaforo Verde ✅ **solo se la chiamata fallisce** (con errore 400, 401 o 403). Se l'Erogatore accetta la richiesta manomessa restituendo un 200 OK, il test fallirà, segnalando una grave vulnerabilità nell'API.
+
+    ### 📋 Lista dei Test Disponibili (ID `security_test_mode`)
+
+    Se la variabile non è presente o è impostata a `0`, la chiamata verrà inviata in modo legittimo (nessun sabotaggio).
+
+    **🛡️ Test sull'Integrità del Payload (INTEGRITY_REST_02)**
+    * **`1`**: Invio Digest del payload errato.
+    * **`2`**: Alterazione manuale della firma Agid-JWT-Signature.
+    * **`3`**: Firma Agid-JWT-Signature scaduta (claim `exp` nel passato).
+    * **`4`**: Firma Agid-JWT-Signature con Audience (`aud`) errato.
+    * **`5`**: Kid inesistente nel JOSE Header (simula il fallimento del check su PDND).
+    * **`6`**: Disallineamento del Content-Type tra HTTP e JWT.
+    * **`7`**: Claim `signed_headers` mancante nel payload.
+
+    **🔐 Test su Autenticazione DPoP (Proof-of-Possession)**
+    * **`8`**: Proof con `ath` (hash dell'Access Token) sballato.
+    * **`9`**: Proof firmata con chiave RSA non autorizzata (Thumbprint errato).
+    * **`10`**: Destinata a un URL diverso (claim `htu` errato, simula Replay Attack su altra rotta).
+    * **`11`**: Destinata a un Metodo HTTP diverso (claim `htm` errato).
+    * **`12`**: Proof scaduta / troppo vecchia (claim `iat` obsoleto, generato 10 minuti fa).
+
+    **🎟️ Test sul Voucher PDND (Access Token)**
+    * **`13`**: Token contraffatto (Self-Signed). Payload clonato alla perfezione, ma firmato dal fruitore anziché da PDND.
+    * **`14`**: Attesa scadenza naturale del token (mette lo script in pausa finché l'access token in cache non spira).
+    * **`15`**: Voucher reale ma per un Audience diverso (richiede il token usando `wrong_purpose_id`).
+  type: text/markdown
+bundled: false
+extensions:
+  bruno:
+    ignore:
+      - node_modules
+      - .git

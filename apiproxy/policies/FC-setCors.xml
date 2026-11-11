@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<FlowCallout continueOnError="false" enabled="true" name="FC-setCors">
+  <DisplayName>FC-setCors</DisplayName>
+  <FaultRules/>
+  <Properties/>
+  <SharedFlowBundle>sfw-puntozero-set-cors</SharedFlowBundle>
+</FlowCallout>

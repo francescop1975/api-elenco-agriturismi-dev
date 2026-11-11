@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<KeyValueMapOperations continueOnError="false" enabled="true" name="KVM-GetPropertyValuesPDND">
+    <DisplayName>KVM-GetPropertyValuesPDND</DisplayName>
+    <MapName>pdnd-config</MapName>
+    <Scope>environment</Scope>
+
+    <Get assignTo="pdnd.jwks.path">
+        <Key>
+            <Parameter>jwks.path</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="pdnd.issuer.uri">
+        <Key>
+            <Parameter>issuer.uri</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="private.pdnd.erogatore.kid">
+        <Key>
+            <Parameter>erogatore.kid</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="private.pdnd.erogatore.key">
+        <Key>
+            <Parameter>erogatore.key</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+</KeyValueMapOperations>

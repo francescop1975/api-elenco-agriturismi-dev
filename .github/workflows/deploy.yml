@@ -1,0 +1,88 @@
+name: Deploy to Apigee
+
+on:
+  push:
+    branches: [ dev ]
+    paths: [ 'apiproxy/**', 'config/kvm-dev.properties' ]
+  release:
+    types: [ published ] # Trigger quando pubblichi una release
+
+permissions:
+  id-token: write
+  contents: read
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      PROJECT_ID: pzsit-apigee-devops
+      WORKLOAD_IDENTITY_PROVIDER: ${{ secrets.APIGEE_DEVOPS_DEPLOYER_WIP }}
+      SA_EMAIL: ${{ secrets.APIGEE_DEVOPS_DEPLOYER_SA }}
+      
+      # 1. Identifichiamo se è PROD (release) o DEV (push su branch dev)
+      IS_PROD: ${{ github.event_name == 'release' }}
+      
+      # 2. Assegnazione dinamica delle variabili
+      ORG_NAME: ${{ github.event_name == 'release' && 'pzsit-host-vpc-prod' || 'pzsit-host-vpc-dev' }}
+      APIGEE_ENV: ${{ github.event_name == 'release' && 'prod' || 'dev' }}
+      KVM_CONFIG_FILE: ${{ github.event_name == 'release' && 'config/kvm-prod.properties' || 'config/kvm-dev.properties' }}
+      
+      # 3. Descrizione dinamica
+      DEPLOY_DESC: >-
+        ${{ github.event_name == 'release' && format('Release: {0}', github.event.release.tag_name) || format('Commit: {0} - Branch: {1}', github.sha, github.ref_name) }}
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v5
+
+      - name: Extract Proxy Name
+        id: get_name
+        run: |
+          xml_file=$(find apiproxy -maxdepth 1 -name '*.xml' | head -n1)
+          PROXY_NAME=$(grep -oP '<APIProxy[^>]*\sname="[^"]+"' "$xml_file" | head -n1 | sed -E 's/.*name="([^"]+)".*/\1/')
+          echo "proxy_name=$PROXY_NAME" >> $GITHUB_OUTPUT
+
+      - name: Setup & Authenticate Google Cloud
+        uses: google-github-actions/auth@v3
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+          workload_identity_provider: ${{ env.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ env.SA_EMAIL }}
+
+      - name: Install apigeecli
+        run: |
+          curl -L https://raw.githubusercontent.com/apigee/apigeecli/main/downloadLatest.sh | sh
+          echo "/home/runner/.apigeecli/bin" >> $GITHUB_PATH
+
+      - name: Deploy Proxy
+        run: |
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+          apigeecli apis create bundle -f ./apiproxy -n ${{ steps.get_name.outputs.proxy_name }} \
+            -o ${{ env.ORG_NAME }} -e ${{ env.APIGEE_ENV }} --ovr --wait -t "$ACCESS_TOKEN" \
+            --desc "${{ env.DEPLOY_DESC }}"
+
+      - name: Sync KVM (Environment Scope)
+        run: |
+          ACCESS_TOKEN=$(gcloud auth print-access-token)
+          # Usiamo il nome del proxy nel nome della KVM, ma lo scope è l'ambiente
+          KVM_NAME="${{ steps.get_name.outputs.proxy_name }}"
+          
+          CLEAN_FILE="config/kvm_clean.properties"
+          sed '1s/^\xEF\xBB\xBF//' ${{ env.KVM_CONFIG_FILE }} | tr -d '\r' > $CLEAN_FILE
+
+          echo "Verifica/Creazione KVM Scope Ambiente: $KVM_NAME"
+          # Usiamo -e e togliamo -p
+          apigeecli kvms create -n "$KVM_NAME" -o ${{ env.ORG_NAME }} -e ${{ env.APIGEE_ENV }} -t "$ACCESS_TOKEN" || echo "KVM già esistente"
+
+          while IFS='=' read -r key value || [ -n "$key" ]; do
+            # Pulizia: rimuove spazi bianchi extra all'inizio e alla fine
+            key=$(echo "$key" | xargs)
+            value=$(echo "$value" | xargs)
+            
+            # Salta se la chiave è vuota o è un commento
+            if [[ -n "$key" && ! "$key" =~ ^# ]]; then
+              echo "Sincronizzo chiave: '$key' con valore: '$value'"
+              
+              apigeecli kvms entries create -m "$KVM_NAME" -o ${{ env.ORG_NAME }} -e ${{ env.APIGEE_ENV }} -k "$key" -l "$value" -t "$ACCESS_TOKEN" || \
+              apigeecli kvms entries update -m "$KVM_NAME" -o ${{ env.ORG_NAME }} -e ${{ env.APIGEE_ENV }} -k "$key" -l "$value" -t "$ACCESS_TOKEN"
+            fi
+          done < $CLEAN_FILE

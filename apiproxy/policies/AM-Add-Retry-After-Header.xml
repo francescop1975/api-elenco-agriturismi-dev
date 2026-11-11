@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<AssignMessage continueOnError="false" enabled="true" name="AM-Add-Retry-After-Header">
+    <Set>
+        <Headers>
+            <Header name="X-RateLimit-Retry-After">{quota.retry.after}</Header>
+        </Headers>
+    </Set>
+    <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+    <AssignTo createNew="false" transport="http" type="response" />
+</AssignMessage>

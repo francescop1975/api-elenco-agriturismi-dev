@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<AssignMessage continueOnError="false" enabled="true" name="AM-setTargetHeaderHost">
+  <DisplayName>AM-setTargetHeaderHost</DisplayName>
+  <Properties/>
+  <Remove>
+    <Headers>
+      <Header name="host"/>
+      <Header name="Authorization"/>
+    </Headers>
+  </Remove>
+  <AssignVariable>
+    <Name>target.header.host</Name>
+    <Template>{targetHost}</Template>
+  </AssignVariable>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+  <AssignTo createNew="false" transport="http" type="request"/>
+</AssignMessage>

@@ -1,0 +1,22 @@
+openapi: 3.0.3
+info:
+  title: Apigee Proxy Template API
+  description: This is a basic OpenAPI specification generated for the project.
+  version: 1.0.0
+servers:
+  - url: https://api.example.com/v1
+paths:
+  /status:
+    get:
+      summary: Status endpoint
+      responses:
+        '200':
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: "Hello world"

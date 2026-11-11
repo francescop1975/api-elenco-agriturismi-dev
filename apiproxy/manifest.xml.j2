@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<APIProxy revision="1" name="{{ proxy_name }}">
+    <!-- Nome del proxy -->
+    <DisplayName>{{ proxy_display_name }}</DisplayName>
+    <!-- Descrizione del proxy -->
+    <Description>{{ proxy_description }}</Description>
+    <CreatedAt>0</CreatedAt>
+    <LastModifiedAt>0</LastModifiedAt>
+    <!-- Basepath del proxy -->
+    <BasePaths>{{ base_path }}</BasePaths>
+    <Policies>
+        <Policy>AC-IPGatekeeper</Policy>
+        <Policy>FC-setCors</Policy>
+        <Policy>FC-verifyAccessToken</Policy>
+        {%- if is_pdnd -%}
+        <Policy>FC-tokenVerifyPdnd</Policy>
+        <Policy>FC-quotaVerifyPdnd</Policy>
+        <Policy>JS-quota-retry-after</Policy>
+        <Policy>AM-Add-Quota-Headers</Policy>
+        <Policy>AM-Add-Retry-After-Header</Policy>
+        <Policy>FC-Audit-Log</Policy>
+        <Policy>KVM-GetPropertyValuesPDND</Policy>
+        {%- if pdnd_integrity_rest02_enabled -%}
+        <Policy>FC-integrityRest02Request</Policy>
+        <Policy>FC-integrityRest02Response</Policy>
+        <Policy>AM-Set-Signature-Headers</Policy>
+        {%- endif -%}
+        {%- else -%}
+        <Policy>FC-securityChecks</Policy>
+        {%- endif -%}
+        <Policy>JS-setLoggingVariables</Policy>
+        <Policy>FC-setErrorRFC</Policy>
+        <Policy>FC-logWriter</Policy>
+        <Policy>AM-disableTargetPathSuffixAppend</Policy>
+        <Policy>AM-setDynamicTargetSuffix</Policy>
+        <Policy>AM-setTargetHeaderHost</Policy>
+        <Policy>KVM-GetPropertyValues</Policy>
+        <Policy>KVM-getRSAPrivateKey</Policy>
+        <Policy>JWT-generateSignedToken</Policy>
+        <Policy>RF-flowNotFound</Policy>
+    </Policies>
+    <ProxyEndpoints>
+        <ProxyEndpoint>default</ProxyEndpoint>
+    </ProxyEndpoints>
+    <Resources>
+        <Resource>jsc://set-logging-variables.js</Resource>
+    </Resources>
+    <TargetEndpoints>
+        <TargetEndpoint>default</TargetEndpoint>
+    </TargetEndpoints>
+</APIProxy>
