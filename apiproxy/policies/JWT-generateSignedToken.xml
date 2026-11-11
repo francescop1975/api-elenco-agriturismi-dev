@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<GenerateJWT continueOnError="false" enabled="true" name="JWT-generateSignedToken">
+  <Algorithm>RS256</Algorithm>
+  <PrivateKey>
+    <Value ref="private.rsa.key.pem"/>
+  </PrivateKey>
+  <Subject>regione-umbria</Subject>
+  <Issuer>apigee-api-gateway</Issuer>
+  <Audience>backend-services</Audience>
+  <ExpiresIn>3600</ExpiresIn>
+  <AdditionalClaims>
+    <Claim name="apiname" ref="apiproxy.name" type="string"/>
+  </AdditionalClaims>
+  <OutputVariable>request.header.x-jwt-assertion</OutputVariable>
+</GenerateJWT>

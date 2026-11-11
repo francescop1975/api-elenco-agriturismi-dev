@@ -1,0 +1,12 @@
+info:
+  name: environment-test
+  type: folder
+  seq: 2
+
+request:
+  auth: inherit
+  variables:
+    - name: purpose_id
+      value: 1dd2cb21-936e-4d03-8b91-87bb5fe4d8f8
+    - name: aud_eservice
+      value: pdnd-test.regione.umbria.it/accreditamento-strutture

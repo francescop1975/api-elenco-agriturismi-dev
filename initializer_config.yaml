@@ -1,0 +1,48 @@
+##################################
+# Apigee Proxy API
+##################################
+
+# Metadata Proxy (Naming convention Standard proxy: api-puntozero-[custom_name]; IT-Wallet: api-it-wallet-[custom_name])
+proxy_name: "api-puntozero-apigee-proxy-template"
+proxy_display_name: "API Proxy Apigee Proxy Template"
+proxy_description: "API template for Apigee"
+base_path: "/apigee-proxy-template"
+
+# PDND (se impostato a true verrà attivato il flusso di verifica PDND al posto del flusso di verifica del token di accesso. )
+is_pdnd: false
+# PDND configuration (Da compilare solo se is_pdnd è impostato a true, se false verranno ignorati i campi sottostanti)
+pdnd_integrity_rest02_enabled: false
+# Valori ammessi: Bearer, DPoP
+pdnd_voucher_type: Bearer
+pdnd_audience_dev: ""
+pdnd_quota_per_key_dev: ""
+pdnd_audience_prod: ""
+pdnd_quota_per_key_prod: ""
+
+# Backend / Target (Naming convention: tgs-...)
+target_server: "tgs-backend-server"
+
+# Backend configuration development
+backend_host_dev: "backend.internal.it"
+backend_basepath_dev: "/customers/api"
+
+# Backend configuration production
+backend_host_prod: "backend.external.it"
+backend_basepath_prod: "/customers/api"
+
+##################################
+# Apigee Product
+# 
+# Da compilare solo se si desidera creare un API Product associato alla API Proxy e pubblicarlo nel Developer Portal. 
+# In caso contrario, lasciare vuoti i campi sottostanti.
+# Per IT-Wallet non necessario.
+##################################
+
+# API Product (Naming convention: api-prd-puntozero-...)
+product_name: "api-prd-puntozero-apigee-proxy-template"
+product_display_name: "API Product Apigee Proxy Template"
+product_description: "API Product for Apigee Proxy Template"
+quota: "100"
+quota_interval: "1"
+quota_time_unit: "minute"
+ratelimit: "14ps"

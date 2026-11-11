@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<TargetEndpoint name="default">
+    <DefaultFaultRule />
+    <PreFlow name="PreFlow">
+        <Request>
+            <Step>
+                <Name>AM-disableTargetPathSuffixAppend</Name>
+            </Step>
+            <Step>
+                <Name>AM-setDynamicTargetSuffix</Name>
+            </Step>
+        </Request>
+        <Response />
+    </PreFlow>
+    <Flows>
+    </Flows>
+    <PostFlow name="PostFlow">
+        <Request>
+            <Step>
+                <Name>KVM-getRSAPrivateKey</Name>
+            </Step>
+            <Step>
+                <Name>AM-setTargetHeaderHost</Name>
+            </Step>
+            <Step>
+                <Name>JWT-generateSignedToken</Name>
+            </Step>
+        </Request>
+        <Response />
+    </PostFlow>
+    <HTTPTargetConnection>
+        <LoadBalancer>
+            <!-- Target server da definire nella console di Apigee -->
+            <Server name="{{ target_server }}" />
+        </LoadBalancer>
+        <Path>{targetBasepath}/{dynamicSuffix}</Path>
+        <Properties />
+    </HTTPTargetConnection>
+</TargetEndpoint>

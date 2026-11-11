@@ -1,0 +1,18 @@
+info:
+  name: example-eservice
+  type: http
+  seq: 1
+
+http:
+  method: POST
+  url: https://{{apigee_host}}/it-wallet/badge-regionale/attribute-claims/1
+  body:
+    type: json
+    data: '{"test":"test"}'
+  auth: inherit
+
+settings:
+  encodeUrl: true
+  timeout: 0
+  followRedirects: true
+  maxRedirects: 5

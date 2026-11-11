@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<FlowCallout continueOnError="false" enabled="true" name="FC-setErrorRFC">
+  <DisplayName>FC-setErrorRFC</DisplayName>
+  <FaultRules/>
+  <Parameters>
+    <Parameter name="rfc7807.error.step">{error.state}</Parameter>
+  </Parameters>
+  <SharedFlowBundle>sfw-puntozero-set-response</SharedFlowBundle>
+</FlowCallout>

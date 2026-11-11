@@ -1,0 +1,48 @@
+{
+    "name": "{{ product_name }}",
+    "displayName": "{{ product_display_name }}",
+    "approvalType": "manual",
+    "attributes": [
+        {
+            "name": "access",
+            "value": "public"
+        },
+        {
+            "name": "ratelimit",
+            "value": "{{ ratelimit }}"
+        }
+    ],
+    "description": "{{ product_description }}",
+    "environments": [
+        "prod"
+    ],
+    "quota": "{{ quota }}",
+    "quotaInterval": "{{ quota_interval }}",
+    "quotaTimeUnit": "{{ quota_time_unit }}",
+    "operationGroup": {
+        "operationConfigs": [
+            {
+                "apiSource": "{{ proxy_name }}",
+                "operations": [
+                    {
+                        "resource": "/status",
+                        "methods": [
+                            "GET"
+                        ]
+                    }
+                ]
+            },
+            {
+                "apiSource": "{{ proxy_name }}",
+                "operations": [
+                    {
+                        "resource": "/entities",
+                        "methods": [
+                            "GET"
+                        ]
+                    }
+                ]
+            }
+        ]
+    }
+}

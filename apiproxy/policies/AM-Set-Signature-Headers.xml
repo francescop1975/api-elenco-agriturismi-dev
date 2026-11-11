@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<AssignMessage name="AM-Set-Signature-Headers">
+    <DisplayName>AM-Set Signature Headers</DisplayName>
+    <Set>
+        <Headers>
+            <Header name="Digest">{pdnd.calculated.digest}</Header>
+            <Header name="Agid-JWT-Signature">{var_pdnd_jwt_signature}</Header>
+        </Headers>
+    </Set>
+    <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+    <AssignTo createNew="false" transport="http" type="response" />
+</AssignMessage>

@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<KeyValueMapOperations continueOnError="false" enabled="true" name="KVM-getRSAPrivateKey">
+  <DisplayName>KVM-getRSAPrivateKey</DisplayName>
+  <Properties/>
+  <ExclusiveCache>false</ExclusiveCache>
+  <ExpiryTimeInSecs>300</ExpiryTimeInSecs>
+  <MapName>jwt-signing-credentials</MapName>
+  <Get assignTo="private.rsa.key.pem">
+    <Key>
+      <Parameter>rsa-private-key</Parameter>
+    </Key>
+  </Get>
+  <Scope>environment</Scope>
+</KeyValueMapOperations>

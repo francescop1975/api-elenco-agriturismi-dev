@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<KeyValueMapOperations continueOnError="false" enabled="true" name="KVM-GetPropertyValues">
+    <DisplayName>KVM-GetPropertyValues</DisplayName>
+    <MapName>{{ proxy_name }}</MapName>
+    <Scope>environment</Scope>
+
+    <Get assignTo="targetBasepath">
+        <Key>
+            <Parameter>basepath</Parameter>
+        </Key>
+        <DefaultValue>/</DefaultValue>
+    </Get>
+
+    <Get assignTo="targetHost">
+        <Key>
+            <Parameter>host</Parameter>
+        </Key>
+        <DefaultValue>localhost</DefaultValue>
+    </Get>
+
+    {%- if is_pdnd -%}
+    <Get assignTo="pdnd.audience">
+        <Key>
+            <Parameter>pdnd.audience</Parameter>
+        </Key>
+        <DefaultValue/>
+    </Get>
+    <Get assignTo="pdnd.quota-per-key">
+        <Key>
+            <Parameter>pdnd.quota-per-key</Parameter>
+        </Key>
+        <DefaultValue/>
+    </Get>
+
+    {%- endif -%}
+
+    <!-- Inserire qui le altre variabili da leggere-->
+</KeyValueMapOperations>

@@ -1,0 +1,79 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<KeyValueMapOperations continueOnError="false" enabled="true" name="KVM-GetPropertyValuesPDND">
+    <DisplayName>KVM-GetPropertyValuesPDND</DisplayName>
+    <MapName>pdnd-config</MapName>
+    <Scope>environment</Scope>
+
+    <Get assignTo="pdnd.jwks.path">
+        <Key>
+            <Parameter>jwks.path</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="pdnd.issuer.uri">
+        <Key>
+            <Parameter>issuer.uri</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="private.pdnd.erogatore.kid">
+        <Key>
+            <Parameter>erogatore.kid</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="private.pdnd.erogatore.key">
+        <Key>
+            <Parameter>erogatore.key</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="pdnd.api.client.id">
+        <Key>
+            <Parameter>api.client.id</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="pdnd.api.kid">
+        <Key>
+            <Parameter>api.kid</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="private.pdnd.api.private.key">
+        <Key>
+            <Parameter>api.private.key</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="pdnd.api.audience">
+        <Key>
+            <Parameter>api.audience</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="private.pdnd.api.dpop.private.key">
+        <Key>
+            <Parameter>api.dpop.private.key</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="pdnd.api.dpop.public.jwk">
+        <Key>
+            <Parameter>api.dpop.public.jwk</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="pdnd.auth.url">
+        <Key>
+            <Parameter>auth.url</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+    <Get assignTo="pdnd.api.url">
+        <Key>
+            <Parameter>api.url</Parameter>
+        </Key>
+        <DefaultValue />
+    </Get>
+</KeyValueMapOperations>

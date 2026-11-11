@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<AssignMessage continueOnError="false" enabled="true" name="AM-Add-Quota-Headers">
+  <Set>
+    <Headers>
+      <Header name="X-RateLimit-Limit">{ratelimit.Q-Quota-Daily-Per-Key.allowed.count}</Header>
+      <Header name="X-RateLimit-Reset">{ratelimit.Q-Quota-Daily-Per-Key.expiry.time}</Header>
+      <Header name="X-RateLimit-Remaining">{ratelimit.Q-Quota-Daily-Per-Key.available.count}</Header>
+    </Headers>
+  </Set>
+  <IgnoreUnresolvedVariables>true</IgnoreUnresolvedVariables>
+  <AssignTo createNew="false" transport="http" type="response"/>
+</AssignMessage>
