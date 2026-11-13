@@ -9,6 +9,12 @@
             <Step>
                 <Name>AM-setDynamicTargetSuffix</Name>
             </Step>
+            <Step>
+			    <Name>KVM-GetMendixCredentials</Name>
+			</Step>
+			<Step>
+			    <Name>BA-EncodeMendixAuth</Name>
+			</Step>
         </Request>
         <Response />
     </PreFlow>
@@ -31,7 +37,7 @@
     <HTTPTargetConnection>
         <LoadBalancer>
             <!-- Target server da definire nella console di Apigee -->
-            <Server name="{{ target_server }}" />
+            <Server name="tgs-elenco-agriturismi" />
         </LoadBalancer>
         <Path>{targetBasepath}/{dynamicSuffix}</Path>
         <Properties />

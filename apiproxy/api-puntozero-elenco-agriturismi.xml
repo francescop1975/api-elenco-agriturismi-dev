@@ -1,34 +1,17 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<APIProxy revision="1" name="{{ proxy_name }}">
+<APIProxy revision="1" name="api-puntozero-elenco-agriturismi">
     <!-- Nome del proxy -->
-    <DisplayName>{{ proxy_display_name }}</DisplayName>
+    <DisplayName>API Proxy Elenco Agriturismi</DisplayName>
     <!-- Descrizione del proxy -->
-    <Description>{{ proxy_description }}</Description>
+    <Description>API Proxy per la verifica degli agriturismi IAP su Mendix</Description>
     <CreatedAt>0</CreatedAt>
     <LastModifiedAt>0</LastModifiedAt>
     <!-- Basepath del proxy -->
-    <BasePaths>{{ base_path }}</BasePaths>
+    <BasePaths>/elenco-agriturismi/v1</BasePaths>
     <Policies>
         <Policy>AC-IPGatekeeper</Policy>
         <Policy>FC-setCors</Policy>
-        <Policy>FC-verifyAccessToken</Policy>
-        {%- if is_pdnd -%}
-        <Policy>FC-tokenVerifyPdnd</Policy>
-        <Policy>FC-quotaVerifyPdnd</Policy>
-        <Policy>JS-quota-retry-after</Policy>
-        <Policy>AM-Add-Quota-Headers</Policy>
-        <Policy>AM-Add-Retry-After-Header</Policy>
-        <Policy>FC-Audit-Log</Policy>
-        <Policy>KVM-GetPropertyValuesPDND</Policy>
-        {%- if pdnd_integrity_rest02_enabled -%}
-        <Policy>FC-integrityRest02Request</Policy>
-        <Policy>FC-integrityRest02Response</Policy>
-        <Policy>AM-Set-Signature-Headers</Policy>
-        {%- endif -%}
-        {%- else -%}
-        <Policy>FC-securityChecks</Policy>
-        {%- endif -%}
-        <Policy>JS-setLoggingVariables</Policy>
+        <Policy>FC-verifyAccessToken</Policy><Policy>FC-securityChecks</Policy><Policy>JS-setLoggingVariables</Policy>
         <Policy>FC-setErrorRFC</Policy>
         <Policy>FC-logWriter</Policy>
         <Policy>AM-disableTargetPathSuffixAppend</Policy>
@@ -38,6 +21,8 @@
         <Policy>KVM-getRSAPrivateKey</Policy>
         <Policy>JWT-generateSignedToken</Policy>
         <Policy>RF-flowNotFound</Policy>
+        <Policy>KVM-GetMendixCredentials</Policy>
+		<Policy>BA-EncodeMendixAuth</Policy>
     </Policies>
     <ProxyEndpoints>
         <ProxyEndpoint>default</ProxyEndpoint>

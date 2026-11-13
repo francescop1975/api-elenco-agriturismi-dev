@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<ProxyEndpoint name="default">
+    <DefaultFaultRule name="all">
+        <AlwaysEnforce>true</AlwaysEnforce><Step>
+            <Name>FC-setCors</Name>
+        </Step>
+        <Step><Name>FC-setErrorRFC</Name>
+        </Step><Step>
+            <Name>JS-setLoggingVariables</Name>
+        </Step>
+        <Condition>(error.status.code!=200) or (error.status.code!=201) or (error.status.code!=202)
+            or (error.status.code!=203) or (error.status.code!=204)</Condition>
+    </DefaultFaultRule>
+    <FaultRules />
+    <PreFlow name="PreFlow">
+        <Request>
+            <Step>
+                <Name>AC-IPGatekeeper</Name>
+            </Step>
+            <Step>
+                <Name>FC-setCors</Name>
+            </Step><Step>
+                <Name>KVM-GetPropertyValues</Name>
+            </Step><Step>
+                <Name>FC-verifyAccessToken</Name>
+            </Step><Step>
+                <Name>FC-securityChecks</Name>
+            </Step>
+        </Request>
+        <Response></Response>
+    </PreFlow>
+    <Flows>
+        <!-- Inserisci qui le varie risorse -->
+        <Flow name="notFound">
+            <Request>
+                <Step>
+                    <Name>RF-flowNotFound</Name>
+                </Step>
+            </Request>
+            <Response />
+        </Flow>
+    </Flows>
+    <PostFlow name="PostFlow">
+        <Request />
+        <Response>
+            <Step>
+                <Name>JS-setLoggingVariables</Name>
+            </Step></Response>
+    </PostFlow>
+    <PostClientFlow>
+        <Request />
+        <Response><Step>
+                <Name>FC-logWriter</Name>
+            </Step>
+        </Response>
+    </PostClientFlow>
+    <HTTPProxyConnection>
+        <BasePath>/elenco-agriturismi/v1</BasePath>
+    </HTTPProxyConnection>
+    <RouteRule name="default">
+        <TargetEndpoint>default</TargetEndpoint>
+    </RouteRule>
+</ProxyEndpoint>

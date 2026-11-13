@@ -4,7 +4,7 @@ info:
   description: This is a basic OpenAPI specification generated for the project.
   version: 1.0.0
 servers:
-  - url: https://api.example.com/v1
+  - url: https://agriturismi.regione.umbria.it/rest/agriturismiiap/v1
 paths:
   /status:
     get:
@@ -20,3 +20,37 @@ paths:
                   message:
                     type: string
                     example: "Hello world"
+  /verifica_agriturismo:
+    get:
+      summary: Verifica agriturismo IAP
+      description: Verifica l'iscrizione di un agriturismo tramite CUAA e numero di iscrizione.
+      operationId: verificaAgriturismo
+      parameters:
+        - name: cuaa
+          in: query
+          description: Codice Unico Azienda Agricola (CUAA)
+          required: true
+          schema:
+            type: string
+            example: "01234567890"
+        - name: num_iscrizione
+          in: query
+          description: Numero di iscrizione dell'agriturismo
+          required: true
+          schema:
+            type: string
+            example: "12345"
+      responses:
+        '200':
+          description: Risposta restituita con successo dal servizio Mendix
+          content:
+            application/json:
+             schema:
+               type: object
+               additionalProperties: true
+        '400':
+          description: Parametri di richiesta mancanti o non validi
+        '401':
+          description: Token o credenziali di accesso al proxy non validi
+        '500':
+          description: Errore interno del proxy o del backend Mendix

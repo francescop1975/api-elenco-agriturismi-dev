@@ -3,10 +3,10 @@
 ##################################
 
 # Metadata Proxy (Naming convention Standard proxy: api-puntozero-[custom_name]; IT-Wallet: api-it-wallet-[custom_name])
-proxy_name: "api-puntozero-apigee-proxy-template"
-proxy_display_name: "API Proxy Apigee Proxy Template"
-proxy_description: "API template for Apigee"
-base_path: "/apigee-proxy-template"
+proxy_name: "api-puntozero-elenco-agriturismi"
+proxy_display_name: "API Proxy Elenco Agriturismi"
+proxy_description: "API Proxy per la verifica degli agriturismi IAP su Mendix"
+base_path: "/elenco-agriturismi/v1"
 
 # PDND (se impostato a true verrà attivato il flusso di verifica PDND al posto del flusso di verifica del token di accesso. )
 is_pdnd: false
@@ -20,15 +20,15 @@ pdnd_audience_prod: ""
 pdnd_quota_per_key_prod: ""
 
 # Backend / Target (Naming convention: tgs-...)
-target_server: "tgs-backend-server"
+target_server: "tgs-elenco-agriturismi"
 
 # Backend configuration development
-backend_host_dev: "backend.internal.it"
-backend_basepath_dev: "/customers/api"
+backend_host_dev: "agriturismi-test.regione.umbria.it"
+backend_basepath_dev: "/rest/agriturismiiap/v1"
 
 # Backend configuration production
-backend_host_prod: "backend.external.it"
-backend_basepath_prod: "/customers/api"
+backend_host_prod: "agriturismi.regione.umbria.it"
+backend_basepath_prod: "/rest/agriturismiiap/v1"
 
 ##################################
 # Apigee Product
@@ -39,9 +39,9 @@ backend_basepath_prod: "/customers/api"
 ##################################
 
 # API Product (Naming convention: api-prd-puntozero-...)
-product_name: "api-prd-puntozero-apigee-proxy-template"
-product_display_name: "API Product Apigee Proxy Template"
-product_description: "API Product for Apigee Proxy Template"
+product_name: "api-prd-puntozero-elenco-agriturismi"
+product_display_name: "API Product Elenco Agriturismi"
+product_description: "API Product per la verifica degli agriturismi IAP"
 quota: "100"
 quota_interval: "1"
 quota_time_unit: "minute"

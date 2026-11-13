@@ -1,6 +1,6 @@
 {
-    "name": "{{ product_name }}",
-    "displayName": "{{ product_display_name }}",
+    "name": "api-prd-puntozero-apigee-proxy-template",
+    "displayName": "API Product Apigee Proxy Template",
     "approvalType": "manual",
     "attributes": [
         {
@@ -9,20 +9,20 @@
         },
         {
             "name": "ratelimit",
-            "value": "{{ ratelimit }}"
+            "value": "14ps"
         }
     ],
-    "description": "{{ product_description }}",
+    "description": "API Product for Apigee Proxy Template",
     "environments": [
         "prod"
     ],
-    "quota": "{{ quota }}",
-    "quotaInterval": "{{ quota_interval }}",
-    "quotaTimeUnit": "{{ quota_time_unit }}",
+    "quota": "100",
+    "quotaInterval": "1",
+    "quotaTimeUnit": "minute",
     "operationGroup": {
         "operationConfigs": [
             {
-                "apiSource": "{{ proxy_name }}",
+                "apiSource": "api-puntozero-elenco-agriturismi",
                 "operations": [
                     {
                         "resource": "/status",
@@ -33,7 +33,7 @@
                 ]
             },
             {
-                "apiSource": "{{ proxy_name }}",
+                "apiSource": "api-puntozero-elenco-agriturismi",
                 "operations": [
                     {
                         "resource": "/entities",
